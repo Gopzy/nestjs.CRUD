@@ -1,17 +1,25 @@
-import { Controller, Post, Get, Body, Param, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { TasksService } from './tasks.service';
 
 @Controller('tasks')
 export class TaskController {
-  constructor(private readonly TasksService: TasksService) { }
+  constructor(private readonly TasksService: TasksService) {}
 
   @Post()
-  addTask(
+  async addTask(
     @Body('title') taskTitle: string,
     @Body('desc') taskDesc: string,
     @Body('date') taskDate: Date,
-  ): any {
-    const generatedID = this.TasksService.insertTasks(
+  ) {
+    const generatedID = await this.TasksService.insertTasks(
       taskTitle,
       taskDesc,
       taskDate,
@@ -19,28 +27,28 @@ export class TaskController {
     return { id: generatedID };
   }
   @Get()
-  getAllTasks() {
-    return this.TasksService.getTasks();
+  async getAllTasks() {
+    const tasks = await this.TasksService.getTasks();
+    return tasks;
   }
   @Get(':id')
   getTask(@Param('id') taskId: string) {
     return this.TasksService.getSingleTask(taskId);
   }
   @Patch(':id')
-  updateTask(
+  async updateTask(
     @Param('id') taskId: string,
     @Body('title') taskTitle: string,
     @Body('desc') taskDesc: string,
     @Body('date') date: Date,
   ) {
-    this.TasksService.updateTask(taskId, taskTitle, taskDesc, date);
+    await this.TasksService.updateTask(taskId, taskTitle, taskDesc, date);
     return null;
   }
 
   @Delete(':id')
-  removeTask(@Param('id') taskId: string) {
-    this.TasksService.deleteTask(taskId);
+  async removeTask(@Param('id') taskId: string) {
+    await this.TasksService.deleteTask(taskId);
     return null;
   }
-
 }

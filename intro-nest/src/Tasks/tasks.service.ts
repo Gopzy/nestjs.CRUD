@@ -1,34 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Task } from './tasks.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class TasksService {
   private Task: Task[] = [];
 
-  insertTasks(title: string, desc: string, date: Date) {
-    const taskId = Math.random().toString();
-    const newTask = new Task(taskId, title, desc, date);
-    this.Task.push(newTask);
-    return taskId;
+  constructor(@InjectModel('Task') private readonly taskModel: Model<Task>) {}
+
+  async insertTasks(title: string, desc: string, date: Date) {
+    // const taskId = Math.random().toString();
+    const newTask = new this.taskModel({
+      title: title,
+      desc: desc,
+      date: date,
+    });
+    // this.Task.push(newTask);
+    const result = await newTask.save();
+    // console.log(result);
+    return result.id as string;
   }
 
-  getTasks() {
-    return [...this.Task];
+  async getTasks() {
+    const Tasks = await this.taskModel.find().exec();
+    console.log(Tasks);
+
+    return Tasks as Task[];
   }
 
-  getSingleTask(taskId: string) {
-    const task = this.findTask(taskId)[0];
-    return { ...task };
+  async getSingleTask(taskId: string) {
+    const task = await this.findTask(taskId);
+    return task;
   }
 
-  updateTask(
-    taskID: string,
-    title: string,
-    desc: string,
-    date: Date,
-  ) {
-    const [task, index] = this.findTask(taskID);
-    const updatedTask = { ...task };
+  async updateTask(taskID: string, title: string, desc: string, date: Date) {
+    const updatedTask = await this.findTask(taskID);
 
     if (title) {
       updatedTask.title = title;
@@ -39,23 +46,22 @@ export class TasksService {
     if (date) {
       updatedTask.date = date;
     }
-    this.Task[index] = updatedTask;
+    updatedTask.save();
   }
 
-  deleteTask(taskID: string) {
-    const index = this.findTask(taskID)[1];
-    this.Task.splice(index, 1)
+  async deleteTask(taskID: string) {
+    await this.taskModel.deleteOne({ _id: taskID }).exec();
 
+    // const index = this.findTask(taskID)[1];
+    // this.Task.splice(index, 1);
   }
 
-  private findTask(taskId: string): [Task, number] {
-    const taskIndex = this.Task.findIndex(tsk => tsk.id === taskId);
-    const task = this.Task[taskIndex];
+  // Promise<Task>
+  private findTask(Id: string) {
+    const task = this.taskModel.findById(Id);
     if (!task) {
       throw new NotFoundException('Could not find the Task');
     }
-    return [task, taskIndex];
+    return task;
   }
-
-
 }
